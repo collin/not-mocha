@@ -1,55 +1,106 @@
 const chalk = require('chalk');
 
-function createDescribeBlock (title) {
-  return {
-    title: title,
-    beforeRunners: [],
-    nestedBlocks: [],
-    tests: [],
-  };
-}
+class DescribeBlock {
+  constructor ({title}) {
+    this.title = title;
 
-function createTest (title, testFn) {
-  return {
-    title: title,
-    testFn: testFn,
+    this.beforeEachRunners = [];
+    this.afterEachRunners = [];
+
+    this.beforeRunners = [];
+    this.afterRunners = [];
+
+    this.nestedBlocks = [];
+    this.tests = [];
+  }
+
+  begetNestedBlock ({title}) {
+    const nestedBlock = new DescribeBlock({title});
+    this.nestedBlocks.push(nestedBlock);
+
+    nestedBlock.beforeEachRunners = this.beforeEachRunners.slice();
+    nestedBlock.afterEachRunners = this.afterEachRunners.slice();
+
+    nestedBlock.beforeRunners = this.beforeRunners.slice();
+    nestedBlock.afterRunners = this.afterRunners.slice();
+
+    return nestedBlock;
   }
 }
 
-const rootBlock = createDescribeBlock('Faux-cha testrunner');
+class TestBlock {
+  constructor ({ title, testFn}) {
+    this.title = title;
+    this.testFn = testFn;
+  }
+}
+
+class CallbackBlock {
+  constructor (title, callbackFn) {
+    this.title = title;
+    this.callbackFn = callbackFn;
+  }
+}
+
+class TestDefinition {
+  constructor ({title, testFn}) {
+    this.title = title;
+    this.testFn = testFn;
+  }
+}
+
+class TestResult {
+}
+
+class Results {
+  constructor () {
+    this.results = [];
+  }
+}
+
+class RunQueue {
+
+}
+
+const rootBlock = new DescribeBlock({title: 'Faux-cha testrunner'});
 rootBlock.failures = [];
 let currentBlock = rootBlock;
 
-function describe (title, fn) {
-  const nestedBlock = createDescribeBlock(title);
-  currentBlock.nestedBlocks.push(nestedBlock);
+function describe (title, blockFn) {
   previousBlock = currentBlock;
-  currentBlock = nestedBlock;
-  currentBlock.beforeRunners = previousBlock.beforeRunners.slice();
-  fn();
-  currentBlock = nestedBlock;
-}
-function it (title, testFn) {
-  currentBlock.tests.push({ title, testFn });
+  currentBlock = previousBlock.begetNestedBlock({title});
+  blockFn();
+  currentBlock = previousBlock;
 }
 
-function beforeEach (title, beforeFunction) {
-  currentBlock.beforeRunners.push({ title, beforeFunction });
+function it (title, testFn) {
+  currentBlock.tests.push(new TestDefinition({ title, testFn }));
+}
+
+function beforeEach (title, runner) {
+  currentBlock.beforeEachRunners.push({ title, runner });
+}
+
+function afterEach (title, runner) {
+  currentBlock.afterEachRunnersopush({ title, runner });
+
+}
+
+function after (title, runner) {
+  currentBlock.afterRunners.push({ title, runner });
+}
+
+function before (title, runner) {
+  currentBlock.beforeRunners.push({ title, runner });
 }
 
 function buildTestQueue (block, queue = [], indent = '') {
-  queue.push({
-    isTest: false,
-    block, indent
-  });
+  queue.push({ block, indent });
   block.tests.forEach(test => {
-    queue.push({
-      isTest: true,
-      block, test, indent
-    });
+    queue.push({ block, test, indent });
   });
   if (block.nestedBlocks.length) {
-    block.nestedBlocks.forEach(block => buildTestQueue(block, queue, indent + '  '));
+    block.nestedBlocks.forEach(nested => buildTestQueue(nested, queue, indent + '  '));
   }
   return queue;
 }
@@ -58,7 +109,7 @@ function executeNextTest (testQueue) {
   return new Promise((resolve, reject) => {
     const nextTest = testQueue.shift();
     if (nextTest) {
-      if (nextTest.isTest) {
+      if (nextTest.test) {
         try {
           nextTest.block.beforeRunners.forEach(runner => runner.beforeFunction());
           function doneCallback () {
@@ -119,12 +170,20 @@ function reportFailures (block) {
 module.exports = {
   run () {
     const testQueue = buildTestQueue(rootBlock);
-    executeTestQueue(testQueue).then(() => {
-      reportFailures(rootBlock);
-    });
+    executeTestQueue(testQueue)
+      .then(() => {
+        reportFailures(rootBlock);
+      })
+      .catch((error) => {
+        console.log('Internal error while running tests.');
+        console.error(error);
+      });
   }
 }
 
 global.it = it;
 global.describe = describe;
 global.beforeEach = beforeEach;
+global.afterEach = afterEach;
+global.before = before;
+global.after = after;

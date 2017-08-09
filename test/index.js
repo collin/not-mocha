@@ -7,11 +7,6 @@ describe('Outer describe', () => {
     done();
   });
 
-  beforeEach('Outer describe', () => {
-    it('works and works and works', () => {
-    });
-  });
-
   describe('First inner describe', () => {
     describe('Deeply nested describe', () => {
       it('does this thing', () => {
@@ -35,8 +30,7 @@ describe('Outer describe', () => {
     });
 
     it('is very cool', () => {
-
+      throw new Error('This is not very cool');
     });
   });
 });
-
