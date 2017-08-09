@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+const notMocha = require('../not-mocha');
+const path = require('path');
+const [node, program, ...testfiles] = process.argv;
+testfiles.forEach(testfile => {
+  require(path.resolve(testfile));
+});
+
+notMocha.run();

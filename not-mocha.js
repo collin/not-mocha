@@ -37,52 +37,6 @@ function beforeEach (title, beforeFunction) {
   currentBlock.beforeRunners.push({ title, beforeFunction });
 }
 
-beforeEach('Root level beforeEach', () => {
-
-});
-
-describe('Outer describe', () => {
-  it('does everything', () => {
-    throw new Error('It does not do everything!');
-  });
-
-  it('is async', (done) => {
-    done();
-  });
-
-  beforeEach('Outer describe', () => {
-    it('works and works and works', () => {
-    });
-  });
-
-  describe('First inner describe', () => {
-    describe('Deeply nested describe', () => {
-      it('does this thing', () => {
-
-      });
-    });
-
-    it('does another thing', () => {
-
-    });
-
-    it('returns a promise', () => {
-      return new Promise((resolve, reject) => {
-        setTimeout(resolve, 3000);
-      });
-    });
-  });
-
-  describe('Second inner describe', () => {
-    beforeEach('Second inner beforeEach', () => {
-    });
-
-    it('is very cool', () => {
-
-    });
-  });
-});
-
 function buildTestQueue (block, queue = [], indent = '') {
   queue.push({
     isTest: false,
@@ -99,7 +53,6 @@ function buildTestQueue (block, queue = [], indent = '') {
   }
   return queue;
 }
-
 
 function executeNextTest (testQueue) {
   return new Promise((resolve, reject) => {
@@ -163,7 +116,15 @@ function reportFailures (block) {
     console.error(failure.error);
   });
 }
-const testQueue = buildTestQueue(rootBlock);
-executeTestQueue(testQueue).then(() => {
-  reportFailures(rootBlock);
-});
+module.exports = {
+  run () {
+    const testQueue = buildTestQueue(rootBlock);
+    executeTestQueue(testQueue).then(() => {
+      reportFailures(rootBlock);
+    });
+  }
+}
+
+global.it = it;
+global.describe = describe;
+global.beforeEach = beforeEach;
