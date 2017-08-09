@@ -122,13 +122,14 @@ function executeNextTest (testQueue) {
           else {
             const maybeAPromise = nextTest.test.testFn();
             if (maybeAPromise && maybeAPromise.then && maybeAPromise.catch) {
-              maybeAPromise.then(() => {
-                console.log(chalk.green(`${nextTest.indent} ✔ ${nextTest.test.title}`));
-                executeNextTest(testQueue).then(resolve, reject);
-              });
-              maybeAPromise.catch(() => {
-                executeNextTest(testQueue).then(resolve, reject);
-              });
+              maybeAPromise
+                .then(() => {
+                  console.log(chalk.green(`${nextTest.indent} ✔ ${nextTest.test.title}`));
+                  executeNextTest(testQueue).then(resolve, reject);
+                })
+                .catch(() => {
+                  executeNextTest(testQueue).then(resolve, reject);
+                });
             }
             else {
               console.log(chalk.green(`${nextTest.indent} ✔ ${nextTest.test.title}`));
