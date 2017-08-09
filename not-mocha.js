@@ -109,6 +109,9 @@ function executeNextTest (testQueue) {
   return new Promise((resolve, reject) => {
     const nextTest = testQueue.shift();
     if (nextTest) {
+      function captureFailure (error) {
+        rootBlock.failures.push({ test: nextTest.test, error });
+      }
       if (nextTest.test) {
         try {
           nextTest.block.beforeRunners.forEach(runner => runner.beforeFunction());
@@ -127,7 +130,10 @@ function executeNextTest (testQueue) {
                   console.log(chalk.green(`${nextTest.indent} ✔ ${nextTest.test.title}`));
                   executeNextTest(testQueue).then(resolve, reject);
                 })
-                .catch(() => {
+                .catch((error) => {
+                  captureFailure(error);
+                  rootBlock.failures.push({ test: nextTest.test, error });
+                  console.log(chalk.red(`${nextTest.indent} ✘ ${nextTest.test.title}`));
                   executeNextTest(testQueue).then(resolve, reject);
                 });
             }
@@ -138,7 +144,7 @@ function executeNextTest (testQueue) {
           }
         }
         catch (error) {
-          rootBlock.failures.push({ test: nextTest.test, error });
+          captureFailure(error);
           console.log(chalk.red(`${nextTest.indent} ✘ ${nextTest.test.title}`));
           executeNextTest(testQueue).then(resolve, reject);
         }

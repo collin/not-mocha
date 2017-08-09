@@ -20,7 +20,13 @@ describe('Outer describe', () => {
 
     it('returns a promise', () => {
       return new Promise((resolve, reject) => {
-        setTimeout(resolve, 1000);
+        setTimeout(resolve, 100);
+      });
+    });
+
+    it('fails with promise rejection', () => {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => { reject(new Error('This promise has been rejected')); }, 100);
       });
     });
   });
